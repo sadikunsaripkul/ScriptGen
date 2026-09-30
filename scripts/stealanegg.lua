@@ -31,7 +31,7 @@ local UIS = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
 
 local FILE = "NM-Blox-Scripter_StealAnEgg.json"
-local Settings = { mode = "rarest", speed = 350, avoidGuard = false, autoPlace = true, rarities = {}, treadmill = false, carryMode = true, carrySpeed = 1500, carryMethod = "teleport" }
+local Settings = { mode = "rarest", speed = 350, avoidGuard = false, autoPlace = true, rarities = {}, treadmill = false, esp = false, antiAfk = true, carryMode = true, carrySpeed = 1500, carryMethod = "teleport" }
 local TREADMILL_PAD = 6
 pcall(function()
 	if isfile and isfile(FILE) then
@@ -321,7 +321,7 @@ local function eggPos(uid)
 	return nil
 end
 
-local function pickEgg(r)
+local function listEggs()
 	local list = {}
 	local okSnap, snap = false, nil
 	if EggState and EggState.ReadFieldEggs then okSnap, snap = pcall(EggState.ReadFieldEggs) end
@@ -335,6 +335,7 @@ local function pickEgg(r)
 					list[#list + 1] = {
 						uid = rec.Uid, pos = pos,
 						rarity = rar and rar.DisplayName or "?",
+						color = rar and typeof(rar.Color) == "Color3" and rar.Color or nil,
 						tier = rar and rar.RarityNumber or 0,
 						weight = info and info.DropWeight or math.huge,
 					}
@@ -348,6 +349,11 @@ local function pickEgg(r)
 			if pos then list[#list + 1] = { uid = m.Name, pos = pos, rarity = "?", tier = 0, weight = 0 } end
 		end
 	end
+	return list
+end
+
+local function pickEgg(r)
+	local list = listEggs()
 	local best
 	for _, e in ipairs(list) do
 		local skip = failed[e.uid] and os.clock() - failed[e.uid] < 20
@@ -476,6 +482,77 @@ task.spawn(function()
 	end
 end)
 
+-- ESP telur: Highlight ikut warna rarity + label nama rarity
+local function clearEsp()
+	local folder = workspace:FindFirstChild("AreaEggSlotsClient")
+	for _, m in ipairs(folder and folder:GetChildren() or {}) do
+		local h = m:FindFirstChild("NMESP")
+		if h then h:Destroy() end
+		local b = m:FindFirstChild("NMESPLabel")
+		if b then b:Destroy() end
+	end
+end
+
+task.spawn(function()
+	local wasOn = false
+	while true do
+		task.wait(1)
+		if Settings.esp then
+			wasOn = true
+			pcall(function()
+				local folder = workspace:FindFirstChild("AreaEggSlotsClient")
+				if not folder then return end
+				for _, e in ipairs(listEggs()) do
+					local m = folder:FindFirstChild(e.uid)
+					if m and not m:FindFirstChild("NMESP") then
+						local col = e.color or Color3.fromHSV(math.clamp(e.tier / 10, 0, 1) * 0.8, 0.8, 1)
+						local h = Instance.new("Highlight")
+						h.Name = "NMESP"
+						h.FillColor = col
+						h.FillTransparency = 0.5
+						h.OutlineColor = Color3.new(1, 1, 1)
+						h.Adornee = m
+						h.Parent = m
+						local adornee = m:IsA("BasePart") and m or m:FindFirstChildWhichIsA("BasePart", true)
+						if adornee then
+							local b = Instance.new("BillboardGui")
+							b.Name = "NMESPLabel"
+							b.Size = UDim2.fromOffset(120, 22)
+							b.StudsOffset = Vector3.new(0, 4, 0)
+							b.AlwaysOnTop = true
+							b.Adornee = adornee
+							local t = Instance.new("TextLabel")
+							t.Size = UDim2.fromScale(1, 1)
+							t.BackgroundTransparency = 1
+							t.Text = e.rarity
+							t.TextColor3 = col
+							t.TextStrokeTransparency = 0.3
+							t.Font = Enum.Font.GothamBold
+							t.TextSize = 14
+							t.Parent = b
+							b.Parent = m
+						end
+					end
+				end
+			end)
+		elseif wasOn then
+			wasOn = false
+			pcall(clearEsp)
+		end
+	end
+end)
+
+-- Anti-AFK: klik maya bila Roblox mahu buang anda kerana idle
+pcall(function()
+	local VU = game:GetService("VirtualUser")
+	player.Idled:Connect(function()
+		if Settings.antiAfk then
+			VU:CaptureController()
+			VU:ClickButton2(Vector2.new())
+		end
+	end)
+end)
+
 -- Tetingkap tetapan
 do
 	local old = player.PlayerGui:FindFirstChild("NMBloxScripter")
@@ -501,7 +578,7 @@ do
 	title.Size = UDim2.new(1, -40, 0, 32)
 	title.Position = UDim2.fromOffset(10, 0)
 	title.BackgroundTransparency = 1
-	title.Text = "NM-Blox-Scripter | Steal An Egg"
+	title.Text = "NM-Blox-Scripter v2 | Steal An Egg"
 	title.TextColor3 = ACC
 	title.Font = Enum.Font.GothamBold
 	title.TextSize = 14
@@ -622,6 +699,10 @@ do
 		if r then home = r.Position; setStatus("Base disimpan") end
 	end)
 	toggle("Elak zon pengawal/boss", function() return Settings.avoidGuard end, function(v) Settings.avoidGuard = v end)
+
+	header("VISUAL & UTILITI")
+	toggle("ESP telur (warna ikut rarity)", function() return Settings.esp end, function(v) Settings.esp = v end)
+	toggle("Anti-AFK", function() return Settings.antiAfk end, function(v) Settings.antiAfk = v end)
 
 	header("TREADMILL")
 	toggle("Treadmill (latih bila tiada telur)", function() return Settings.treadmill end, function(v) Settings.treadmill = v end)
