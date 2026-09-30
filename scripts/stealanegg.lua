@@ -31,7 +31,7 @@ local UIS = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
 
 local FILE = "NM-Blox-Scripter_StealAnEgg.json"
-local Settings = { mode = "rarest", speed = 350, avoidGuard = false, autoPlace = true, rarities = {}, treadmill = false, carryMode = true, carrySpeed = 700 }
+local Settings = { mode = "rarest", speed = 350, avoidGuard = false, autoPlace = true, rarities = {}, treadmill = false, carryMode = true, carrySpeed = 1500, carryMethod = "teleport" }
 local TREADMILL_PAD = 6
 pcall(function()
 	if isfile and isfile(FILE) then
@@ -258,10 +258,12 @@ local function travel(target, stopShort, opts)
 		target = pushOut(target)
 	end
 	local points = {}
-	local path = PFS:CreatePath({ AgentRadius = 2, AgentHeight = 5, AgentCanJump = true })
-	local ok = pcall(function() path:ComputeAsync(r.Position, target) end)
-	if ok and path.Status == Enum.PathStatus.Success then
-		for _, w in ipairs(path:GetWaypoints()) do points[#points + 1] = w.Position + Vector3.new(0, 3, 0) end
+	if not opts.direct then
+		local path = PFS:CreatePath({ AgentRadius = 2, AgentHeight = 5, AgentCanJump = true })
+		local ok = pcall(function() path:ComputeAsync(r.Position, target) end)
+		if ok and path.Status == Enum.PathStatus.Success then
+			for _, w in ipairs(path:GetWaypoints()) do points[#points + 1] = w.Position + Vector3.new(0, 3, 0) end
+		end
 	end
 	if #points == 0 then points[1] = target + Vector3.new(0, 3, 0) end
 	if stopShort then
@@ -374,7 +376,7 @@ local function deposit()
 	if place and uid then
 		pcall(function() place:InvokeServer({ LocalCFrame = CFrame.new(0, 0, 0), Uid = uid }) end)
 	end
-	task.wait(1.5)
+	task.wait(0.4)
 	carrying, carryUid = false, nil
 end
 
@@ -386,13 +388,33 @@ local function acquire()
 end
 local function release() mover = false end
 
+local function snapHome()
+	local h, r = prepHumanoid(), root()
+	if not h or not r or not home then return false end
+	local dest = pushOut(home)
+	local cf = CFrame.new(dest + Vector3.new(0, 3, 0))
+	r.CFrame = cf
+	r.AssemblyLinearVelocity = Vector3.zero
+	task.wait(0.1)
+	r = root()
+	if r and (r.Position - cf.Position).Magnitude > 8 then r.CFrame = cf end
+	return true
+end
+
 local function returnAndDeposit(speed, force)
 	if not home then
 		setStatus("Set base dahulu")
 		return
 	end
-	setStatus("Bawa telur balik ke base (laju)")
-	if travel(home, nil, { speed = speed, force = force }) then
+	local arrived
+	if Settings.carryMode and Settings.carryMethod == "teleport" then
+		setStatus("Teleport ke base")
+		arrived = snapHome()
+	else
+		setStatus("Bawa telur balik ke base (laju)")
+		arrived = travel(home, nil, { speed = speed, force = force, direct = Settings.carryMode })
+	end
+	if arrived then
 		if Settings.autoPlace then
 			setStatus("Letak telur")
 			deposit()
@@ -441,14 +463,14 @@ end
 -- Mod bawa telur: pegang telur -> terus pulang ke base pada kelajuan penuh (walau skrip OFF)
 task.spawn(function()
 	while true do
-		task.wait(0.2)
+		task.wait(0.05)
 		if Settings.carryMode and not mover then
 			local h = hum()
 			if h and h.Health > 0 and (carrying or heldEgg()) and acquire() then
 				local ok, err = pcall(returnAndDeposit, Settings.carrySpeed, true)
 				release()
 				if not ok then setStatus("Ralat: " .. tostring(err)) end
-				task.wait(1)
+				task.wait(0.3)
 			end
 		end
 	end
@@ -609,10 +631,17 @@ do
 
 	header("BAWA TELUR")
 	toggle("Auto pulang ke base bila pegang telur", function() return Settings.carryMode end, function(v) Settings.carryMode = v end)
+	local methodBtn = btn("")
+	local function paintMethod() methodBtn.Text = "Cara pulang: " .. (Settings.carryMethod == "teleport" and "TELEPORT terus (paling laju)" or "Tween lurus (selamat)") end
+	methodBtn.MouseButton1Click:Connect(function()
+		Settings.carryMethod = Settings.carryMethod == "teleport" and "tween" or "teleport"
+		paintMethod(); saveSettings()
+	end)
+	paintMethod()
 	local carryBtn = btn("")
-	local function paintCarry() carryBtn.Text = "Kelajuan pulang: " .. Settings.carrySpeed .. "  (klik: +100, had 1000)" end
+	local function paintCarry() carryBtn.Text = "Kelajuan tween pulang: " .. Settings.carrySpeed .. "  (klik: +250, had 3000)" end
 	carryBtn.MouseButton1Click:Connect(function()
-		Settings.carrySpeed = Settings.carrySpeed >= 1000 and 300 or Settings.carrySpeed + 100
+		Settings.carrySpeed = Settings.carrySpeed >= 3000 and 500 or Settings.carrySpeed + 250
 		paintCarry(); saveSettings()
 	end)
 	paintCarry()
