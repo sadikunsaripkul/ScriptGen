@@ -3,14 +3,15 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
-local State = { enabled = false }
+local State = { enabled = false, runId = tostring(os.clock()) .. tostring(math.random(1, 1e9)) }
+_G.NMRun = State.runId
 local function root()
 	local c = player.Character
 	return c and c:FindFirstChild("HumanoidRootPart")
 end
 local function loop(name, delay, fn)
 	task.spawn(function()
-		while true do
+		while _G.NMRun == State.runId do
 			if State.enabled then
 				local ok, err = pcall(fn)
 				if not ok then
@@ -468,7 +469,7 @@ end
 
 -- Mod bawa telur: pegang telur -> terus pulang ke base pada kelajuan penuh (walau skrip OFF)
 task.spawn(function()
-	while true do
+	while _G.NMRun == State.runId do
 		task.wait(0.05)
 		if Settings.carryMode and not mover then
 			local h = hum()
@@ -495,7 +496,7 @@ end
 
 task.spawn(function()
 	local wasOn = false
-	while true do
+	while _G.NMRun == State.runId do
 		task.wait(1)
 		if Settings.esp then
 			wasOn = true
@@ -672,7 +673,7 @@ do
 		master.BackgroundColor3 = State.enabled and Color3.fromRGB(60, 120, 60) or Color3.fromRGB(120, 50, 50)
 	end
 	master.MouseButton1Click:Connect(function() State.enabled = not State.enabled; paintMaster() end)
-	State.enabled = true
+	State.enabled = false
 	paintMaster()
 
 	statusLabel = Instance.new("TextLabel")
