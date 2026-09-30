@@ -4,14 +4,17 @@ local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
 local State = { enabled = false, runId = tostring(os.clock()) .. tostring(math.random(1, 1e9)) }
-_G.NMRun = State.runId
+local Env = (getgenv and getgenv()) or _G
+local function setRun(v) pcall(function() Env.NMRun = v end) end
+local function isCurrent() return Env.NMRun == State.runId end
+setRun(State.runId)
 local function root()
 	local c = player.Character
 	return c and c:FindFirstChild("HumanoidRootPart")
 end
 local function loop(name, delay, fn)
 	task.spawn(function()
-		while _G.NMRun == State.runId do
+		while isCurrent() do
 			if State.enabled then
 				local ok, err = pcall(fn)
 				if not ok then
@@ -469,7 +472,7 @@ end
 
 -- Mod bawa telur: pegang telur -> terus pulang ke base pada kelajuan penuh (walau skrip OFF)
 task.spawn(function()
-	while _G.NMRun == State.runId do
+	while isCurrent() do
 		task.wait(0.05)
 		if Settings.carryMode and not mover then
 			local h = hum()
@@ -496,7 +499,7 @@ end
 
 task.spawn(function()
 	local wasOn = false
-	while _G.NMRun == State.runId do
+	while isCurrent() do
 		task.wait(1)
 		if Settings.esp then
 			wasOn = true
