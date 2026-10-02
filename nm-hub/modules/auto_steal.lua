@@ -331,12 +331,44 @@ local function listEggs()
 	return list
 end
 
+local function passesMutation(e)
+	local mf = _G.NMHUB.modules and _G.NMHUB.modules.mutation_filter
+	if not mf or not mf.isAllowed then return true end
+	local folder = workspace:FindFirstChild("AreaEggSlotsClient")
+	local model = (folder and folder:FindFirstChild(e.uid)) or workspace:FindFirstChild(e.uid)
+	if not model then return true end
+	local mut = mf.eggMutation(model)
+	if not mut then return true end
+	e.mutation = mut
+	return mf.isAllowed(mut)
+end
+
+local function passesArea(e)
+	local f = filters()
+	if not f.area then return true end
+	local folder = workspace:FindFirstChild("AreaEggSlotsClient")
+	local model = (folder and folder:FindFirstChild(e.uid)) or workspace:FindFirstChild(e.uid)
+	if not model then return true end
+	-- nama ibu bapa model biasanya mengandungi nama kawasan
+	local names = {}
+	local cur = model
+	for _ = 1, 3 do
+		cur = cur and cur.Parent
+		if not cur or cur == workspace then break end
+		names[#names + 1] = cur.Name
+	end
+	for _, n in ipairs(names) do
+		if n:lower():find(f.area:lower(), 1, true) then return true end
+	end
+	return false
+end
+
 local function pickEgg(r)
 	local f = filters()
 	local best
 	for _, e in ipairs(listEggs()) do
 		local skip = failed[e.uid] and os.clock() - failed[e.uid] < 20
-		if not skip and not inGuard(e.pos) then
+		if not skip and not inGuard(e.pos) and passesMutation(e) and passesArea(e) then
 			e.dist = (e.pos - r.Position).Magnitude
 			local better
 			if not best then
@@ -344,7 +376,10 @@ local function pickEgg(r)
 			elseif f.priority == "Nearest" or f.priority == "Fastest" then
 				better = e.dist < best.dist
 			elseif f.priority == "Biggest" then
-				better = e.weight < best.weight or (e.weight == best.weight and e.dist < best.dist)
+				local em = e.mutation and 2 or 1
+				local bm = best.mutation and 2 or 1
+				better = em > bm
+					or (em == bm and (e.weight < best.weight or (e.weight == best.weight and e.dist < best.dist)))
 			else -- Rarest
 				better = e.tier > best.tier
 					or (e.tier == best.tier and e.weight < best.weight)

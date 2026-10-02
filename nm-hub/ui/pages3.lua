@@ -331,7 +331,24 @@ function C.new(ctx, window)
             end
         end)
         makeToggle(g1, "Auto Pickup Back", true)
-        makeButton(g1, "Refresh Friend List", function() end)
+        local list = Instance.new("TextLabel", g1)
+        list.Size = UDim2.new(1, -20, 0, 36)
+        list.Position = UDim2.new(0, 10, 0, 6)
+        list.BackgroundTransparency = 1
+        list.Text = "Rakan di server: --"
+        list.TextColor3 = cSub
+        list.Font = Enum.Font.Code
+        list.TextSize = 11
+        list.TextXAlignment = Enum.TextXAlignment.Left
+        list.TextWrapped = true
+        makeButton(g1, "Refresh Friend List", function()
+            if self.modules.friends_drop and self.modules.friends_drop.refreshFriends then
+                local fs = self.modules.friends_drop.refreshFriends()
+                local names = {}
+                for _, f in ipairs(fs or {}) do names[#names + 1] = f.Name end
+                list.Text = "Rakan di server: " .. (#names > 0 and table.concat(names, ", ") or "tiada")
+            end
+        end)
     end
 
     -- UTILITY
@@ -356,6 +373,7 @@ function C.new(ctx, window)
             end
         end)
 
+        local slots = {}
         for i = 1, 10 do
             local slot = Instance.new("TextLabel", g1)
             slot.Size = UDim2.new(1, -20, 0, 18)
@@ -366,7 +384,27 @@ function C.new(ctx, window)
             slot.Font = Enum.Font.Code
             slot.TextSize = 11
             slot.TextXAlignment = Enum.TextXAlignment.Left
+            slots[i] = slot
         end
+        task.spawn(function()
+            while info.Parent do
+                local q = {}
+                pcall(function()
+                    q = (_G.NMHUB and _G.NMHUB.registry and _G.NMHUB.registry.info) or {}
+                end)
+                for i = 1, 10 do
+                    local e = q[i]
+                    if e and not e.expired then
+                        slots[i].Text = string.format("%02d. %s (%s)", i, tostring(e.name), tostring(e.rarity))
+                        slots[i].TextColor3 = cPurple
+                    else
+                        slots[i].Text = string.format("%02d. --", i)
+                        slots[i].TextColor3 = cSub
+                    end
+                end
+                task.wait(1)
+            end
+        end)
     end
 
     -- SETTINGS
