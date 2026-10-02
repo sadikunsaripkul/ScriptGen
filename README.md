@@ -2,10 +2,10 @@
 
 Skrip Roblox oleh NM-HUB.
 
-## NM-HUB — Steal An Egg
+## NM-HUB — Steal An Egg (single file)
 ```lua
-loadstring(game:HttpGet("https://raw.githubusercontent.com/sadikunsaripkul/ScriptGen/main/nm-hub/loader.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/sadikunsaripkul/ScriptGen/main/scripts/nm-hub.lua"))()
 ```
-Toggle key: RightShift. Mula dengan Enable Auto Steal di tab Farm, dan Set Base di posisi anda dahulu.
+Satu fail sahaja (tiada muat turun modul berasingan). UI Rayfield, toggle RightShift oleh Rayfield. Fitur utama: Auto Steal (pilih telur ikut rarity), auto deposit ke base, auto hatch, ESP 7 mod, treadmill, server hop, webhook (pilihan, kosong lalai).
 
-Nota: UI dan struktur berasaskan repo terbuka [or4cle-steal-an-egg](https://github.com/OzLL-BeeP/or4cle-steal-an-egg) (OzLL-BeeP), dikod semula dan dijenamakan sebagai NM-HUB. Modul farm diisi dengan enjin NM sendiri. Remote `AskHatch` masih eksperimen. Skrip lama (stealanegg/nm-egg) sudah dibuang.
+Atribusi: base daripada repo terbuka [chaocauminhlason/steal-an-egg](https://github.com/chaocauminhlason/steal-an-egg) (Sơn Studio), dijenamakan semula sebagai NM-HUB. Kredit asal dikekalkan dalam tab Credits skrip.
