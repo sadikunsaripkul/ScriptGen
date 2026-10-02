@@ -2,7 +2,12 @@
 
 Skrip Roblox dijana oleh NM-Blox-Scripter.
 
-## Steal An Egg
+## NM-EGG (terkini)
+```lua
+loadstring(game:HttpGet("https://raw.githubusercontent.com/sadikunsaripkul/ScriptGen/main/scripts/nm-egg.lua"))()
+```
+
+## Steal An Egg (lama)
 ```lua
 loadstring(game:HttpGet("https://raw.githubusercontent.com/sadikunsaripkul/ScriptGen/main/scripts/stealanegg.lua"))()
 ```
